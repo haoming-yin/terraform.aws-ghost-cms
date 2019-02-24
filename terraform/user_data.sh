@@ -1,8 +1,9 @@
 #! /bin/bash
 
 # func to log user data progress into a log file
+mkdir -p /usr/outputs
 function log() {
-    echo -e "[$(date +%FT%TZ)] $1" >> /usr/assignment/outputs/user_data.out
+    echo -e "[$(date +%FT%TZ)] $1" >> /usr/outputs/user_data.out
 }
 
 log "Started running user data."
@@ -10,7 +11,6 @@ log "Started running user data."
 log "Setting up firewall config."
 ufw allow ssh
 ufw allow http
-ufw allow https
 
 ufw --force enable
 
@@ -31,7 +31,13 @@ apt-get -y install docker-ce docker-ce-cli containerd.io
 apt-get -y install docker-compose
 usermod -aG docker ubuntu
 
-apt-get -y install python3-pip
-pip3 install -r /usr/assignment/qrious-sre-assignment/requirements.txt
+# run docker compose
+mkdir -p /usr/ghost
+cd /usr
+git clone https://github.com/haoming-yin/terraform.aws-ghost-cms.git
+
+cd /usr/terraform.aws-ghost-cms
+docker-compose build
+docker-compose up -d
 
 log "Finished running user data script."
