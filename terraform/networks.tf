@@ -58,9 +58,9 @@ resource "aws_route_table_association" "main_private_subnet_route_table_associat
   route_table_id = "${aws_route_table.main_private_route_table.id}"
 }
 
-# Security groups -- database, web-cloudflare, ssh 
-resource "aws_security_group" "db_sg" {
-  name        = "db_sg"
+# Security groups -- internal only, web-cloudflare, ssh 
+resource "aws_security_group" "internal_sg" {
+  name        = "internal_sg"
   description = "Allow traffic from web subnets within the same VPC"
   vpc_id      = "${aws_vpc.main_vpc.id}"
 
@@ -78,7 +78,7 @@ resource "aws_security_group" "db_sg" {
     cidr_blocks = ["0.0.0.0/0"]
   }
 
-  tags = "${merge(map("Name" , "db_sg"),var.tags)}"
+  tags = "${merge(map("Name" , "internal_sg"),var.tags)}"
 }
 
 resource "aws_security_group" "web_cloudflare_sg" {
