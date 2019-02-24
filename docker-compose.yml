@@ -11,7 +11,7 @@ services:
     environment:
       database__client: mysql
       # values to be populated
-      database__connection__host: 
+      database__connection__host: "terraform-20190224085206783300000001.cb1ligs0itzk.us-east-1.rds.amazonaws.com"
       database__connection__user: mysql
       database__connection__password: secret
       database__connection__database: ghost
