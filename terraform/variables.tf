@@ -2,7 +2,7 @@ variable "region" {
 }
 
 variable "key_pair" {
-  default = "aws-ghost-cms-key"
+  default = "aws-shared-key"
 }
 
 variable "tags" {

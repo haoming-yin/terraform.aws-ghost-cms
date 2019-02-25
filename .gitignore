@@ -12,3 +12,6 @@
 
 # ssh key
 *.pem
+*.pub
+
+aws-shared-key

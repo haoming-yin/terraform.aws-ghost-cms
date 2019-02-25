@@ -1,7 +1,5 @@
 version: '3'
-
 services:
-
   ghost:
     container_name: ghost
     image: ghost:2-alpine
@@ -9,11 +7,11 @@ services:
     ports:
       - 2368:2368
     environment:
+      url: https://haomingyin.com
       database__client: mysql
-      # values to be populated
-      database__connection__host: "terraform-20190224085206783300000001.cb1ligs0itzk.us-east-1.rds.amazonaws.com"
-      database__connection__user: mysql
-      database__connection__password: secret
+      database__connection__host: "terraform-20190225074633734800000001.cuahzejpyzhi.ap-southeast-2.rds.amazonaws.com"
+      database__connection__user: root
+      database__connection__password: thesecret 
       database__connection__database: ghost
       database__connection__port: 3306
     volumes:
