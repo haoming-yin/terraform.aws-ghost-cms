@@ -1,5 +1,4 @@
-variable "region" {
-}
+variable "region" {}
 
 variable "key_pair" {
   default = "aws-shared-key"

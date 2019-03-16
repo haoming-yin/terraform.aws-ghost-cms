@@ -2,20 +2,16 @@ data "local_file" "user_data" {
   filename = "./user_data.sh"
 }
 
-data "local_file" "public_ssh_key" {
-  filename = "./${var.key_pair}.pub"
-}
-
 data "aws_ami" "ubuntu_ami" {
   most_recent = true
 
   filter {
-    name = "name"
+    name   = "name"
     values = ["ubuntu/images/hvm-ssd/ubuntu-bionic-18.04-amd64-server-*"]
   }
 
   filter {
-    name = "virtualization-type"
+    name   = "virtualization-type"
     values = ["hvm"]
   }
 
