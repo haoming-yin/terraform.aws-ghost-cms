@@ -5,13 +5,14 @@ function log() {
     echo -e "[$(date +%FT%TZ)] $1" >> /var/log/user_data.log
 }
 
-function instance_metadata() {
-    ## Get Some Instance Metadeets
-    INSTANCE_ID="$(curl http://169.254.169.254/latest/meta-data/instance-id)";
-    LOCAL_HOSTNAME="$(curl http://169.254.169.254/latest/meta-data/local-hostname)";
-    AVAILABILITY_ZONE=`curl -s http://169.254.169.254/latest/meta-data/placement/availability-zone`;
-    AWS_REGION="`echo \"$AVAILABILITY_ZONE\" | sed 's/[a-z]$//'`";
-    ACCOUNT_ID=`aws sts get-caller-identity --query Account --output text`
+function export_instance_metadata() {
+    log "Getting and exporting instance metadata to environment."
+    export INSTANCE_ID=$(curl http://169.254.169.254/latest/meta-data/instance-id)
+    export LOCAL_HOSTNAME=$(curl http://169.254.169.254/latest/meta-data/local-hostname)
+    export AVAILABILITY_ZONE=$(curl -s http://169.254.169.254/latest/meta-data/placement/availability-zone)
+    export AWS_REGION=$(echo $AVAILABILITY_ZONE | sed 's/[a-z]$//')
+    export AWS_DEFAULT_REGION=$(echo $AWS_REGION)
+    export ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
 }
 
 function config_firewall() {
@@ -45,6 +46,11 @@ function install_docker() {
     usermod -aG docker ubuntu
 }
 
+function install_aws_cli() {
+    apt-get update
+    apt-get -y install awscli
+}
+
 function get_db_host() {
     arns=$(aws rds describe-db-instances --query "DBInstances[].DBInstanceArn" --output text)
     for arn in $arns; do
@@ -58,6 +64,7 @@ function get_db_host() {
 }
 
 function install_ghost() {
+    log "Installing ghost CMS."
     mkdir -p /usr/ghost
     DB_HOST=$(get_db_host)
     DB_PASSWORD=$(get_parameter "/db/password")
@@ -74,25 +81,25 @@ ExecStartPre=-/usr/bin/docker stop %n
 ExecStartPre=-/usr/bin/docker rm %n
 ExecStartPre=/usr/bin/docker pull ghost:2-alpine
 ExecStart=/usr/bin/docker run \\
-                                -e "url=https://haomingyin.com" \\
+                                -e "url=http://haomingyin.com" \\
                                 -e "database__client=mysql" \\
                                 -e "database__connection__host=$DB_HOST" \\
-                                -e "database__connection__user=root" \\ 
+                                -e "database__connection__user=root" \\
                                 -e "database__connection__password=$DB_PASSWORD" \\
                                 -e "database__connection__database=host" \\
                                 -e "database__connection__port=3306" \\
                                 -v /usr/ghost/content:/var/lib/ghost/content \\
                                 --name %n \\
-                                -p 2368:2369 \\
-                                ghost:2-alpine 
+                                -p 2368:2368 \\
+                                ghost:2-alpine
 ExecStop=/usr/bin/docker stop %n
 [Install]
 WantedBy=multi-user.target
 END
-
 }
 
 function install_nginx-ghost() {
+    log "Installing Nginx ghost."
     cat > /etc/systemd/system/nginx-ghost.service <<END
 [Unit]
 Description=Nginx that serves Ghost CMS
@@ -111,14 +118,14 @@ ExecStart=/usr/bin/docker run \\
 ExecStop=/usr/bin/docker stop %n
 [Install]
 WantedBy=multi-user.target
-END 
-
+END
 }
 
 function install_ddns-cloudflare() {
+    log "Installed DDNS Cloudflare."
     X_AUTH_EMAIL=$(get_parameter "/cloudflare/email")
     X_AUTH_KEY=$(get_parameter "/cloudflare/key")
-
+    
     cat > /etc/systemd/system/ddns-cloudflare.service <<END
 [Unit]
 Description=DDNS Cloudflare
@@ -139,16 +146,19 @@ ExecStart=/usr/bin/docker run \\
 ExecStop=/usr/bin/docker stop %n
 [Install]
 WantedBy=multi-user.target
-END 
-
+END
 }
 
 log "Started running user data."
+
+export_instance_metadata
 config_firewall
+
+install_aws_cli
 install_docker
 
 install_ghost
-service ghost start 
+service ghost start
 
 install_nginx-ghost
 service nginx-ghost start
