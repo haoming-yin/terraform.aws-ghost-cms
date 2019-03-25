@@ -50,6 +50,17 @@ resource "aws_autoscaling_group" "main_asg" {
   min_size          = 1
   health_check_type = "EC2"
 
+  enabled_metrics = [
+    "GroupMinSize",
+    "GroupMaxSize",
+    "GroupDesiredCapacity",
+    "GroupInServiceInstances",
+    "GroupPendingInstances",
+    "GroupStandbyInstances",
+    "GroupTerminatingInstances",
+    "GroupTotalInstances",
+  ]
+
   launch_template {
     id      = "${aws_launch_template.web_server_launch_template.id}"
     version = "$$Latest"

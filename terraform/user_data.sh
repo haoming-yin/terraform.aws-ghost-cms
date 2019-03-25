@@ -64,8 +64,8 @@ function get_db_host() {
 }
 
 function install_ghost() {
-    log "Installing ghost CMS."
-    mkdir -p /usr/ghost
+    log "Installing ghost service."
+    mkdir -p /usr/ghost/content
     DB_HOST=$(get_db_host)
     DB_PASSWORD=$(get_parameter "/db/password")
     SMTP_FROM=$(get_parameter "/smtp/from")
@@ -108,7 +108,7 @@ END
 }
 
 function install_nginx-ghost() {
-    log "Installing Nginx ghost."
+    log "Installing nginx-ghost service."
     cat > /etc/systemd/system/nginx-ghost.service <<END
 [Unit]
 Description=Nginx that serves Ghost CMS
@@ -131,7 +131,7 @@ END
 }
 
 function install_ddns-cloudflare() {
-    log "Installed DDNS Cloudflare."
+    log "Installing ddns-cloudflare service."
     X_AUTH_EMAIL=$(get_parameter "/cloudflare/email")
     X_AUTH_KEY=$(get_parameter "/cloudflare/key")
     
@@ -158,6 +158,38 @@ WantedBy=multi-user.target
 END
 }
 
+function install_s3-sync() {
+    log "Syncing ghost content from S3."
+    mkdir -p /usr/ghost/content
+    aws s3 sync s3://haomingyin.com/ghost-cms/content /usr/ghost/content --delete --no-follow-symlinks --exclude "logs/*"
+    
+    log "Installing s3-sync service."
+    cat > /etc/systemd/system/s3-sync.service <<END
+[Unit]
+Description=S3 sync for Ghost CMS content
+After=ghost.service
+Requires=ghost.service
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/aws s3 sync /usr/ghost/content s3://haomingyin.com/ghost-cms/content --delete --no-follow-symlinks --exclude "logs/*"
+[Install]
+WantedBy=multi-user.target
+END
+    
+    log "Installing s3-sync timer."
+    cat > /etc/systemd/system/s3-sync.timer <<END
+[Unit]
+Description=Run s3-sync service daily
+[Timer]
+Unit=s3-sync.service
+OnCalendar=daily
+Persistent=true
+[Install]
+WantedBy=timers.target
+END
+    
+}
+
 log "Started running user data."
 
 export_instance_metadata
@@ -166,8 +198,11 @@ config_firewall
 install_aws_cli
 install_docker
 
+install_s3-sync
 install_ghost
+
 service ghost start
+systemctl enable s3-sync.timer --now
 
 install_nginx-ghost
 service nginx-ghost start
