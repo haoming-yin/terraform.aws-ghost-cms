@@ -68,6 +68,9 @@ function install_ghost() {
     mkdir -p /usr/ghost
     DB_HOST=$(get_db_host)
     DB_PASSWORD=$(get_parameter "/db/password")
+    SMTP_FROM=$(get_parameter "/smtp/from")
+    SMTP_USER=$(get_parameter "/smtp/user")
+    SMTP_PASSWORD=$(get_parameter "/smtp/password")
     
     cat > /etc/systemd/system/ghost.service <<END
 [Unit]
@@ -88,6 +91,12 @@ ExecStart=/usr/bin/docker run \\
                                 -e "database__connection__password=$DB_PASSWORD" \\
                                 -e "database__connection__database=host" \\
                                 -e "database__connection__port=3306" \\
+                                -e "mail__transport=SMTP" \\
+                                -e "mail__from=$SMTPL_FROM" \\
+                                -e "mail__options__host=smtp.zoho.com" \\
+                                -e "mail__options__port=587" \\
+                                -e "mail__options__auth__user=$SMTP_USER" \\
+                                -e "mail__options__auth__pass=$SMTP_PASSWORD" \\
                                 -v /usr/ghost/content:/var/lib/ghost/content \\
                                 --name %n \\
                                 -p 2368:2368 \\
